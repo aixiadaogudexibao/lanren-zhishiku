@@ -1,0 +1,5 @@
+# 实战使用日志（append-only；写入位＝文末的哨兵行）
+# 日期 | 键 | 结果 | 案例id | 备注
+# 键 = liucheng_biao/<标号> / tools/<工具名> / cuowu/<错误特征> / zhiling/<操作>
+# 结果 ∈ 成 / 败
+★

@@ -1,0 +1,7 @@
+# Line endings. Shell/Python must be LF (CRLF makes bash fail with $'').
+# PowerShell/cmd scripts need CRLF; install.ps1 also carries a UTF-8 BOM.
+*      text=auto eol=lf
+*.sh   text eol=lf
+*.py   text eol=lf
+*.ps1  text eol=crlf
+*.cmd  text eol=crlf

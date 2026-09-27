@@ -6,6 +6,8 @@
 #   bash install.sh --copy
 #   bash install.sh --force
 #   bash install.sh --skip-xinxi
+#   bash install.sh --data-root ~/.zhishiku       # one data root shared by all harnesses
+#   bash install.sh --force-xinxi                  # overwrite an existing xinxi.txt
 #   SKILLS_ROOT=/path bash install.sh
 
 set -euo pipefail
@@ -15,6 +17,8 @@ MODE=link
 FORCE=0
 SKIP_XINXI=0
 SKIP_LINK=0
+FORCE_XINXI=0
+DATA_ROOT=""
 SKILLS_ROOT="${SKILLS_ROOT:-$HOME/.pi/agent/skills}"
 
 while [[ $# -gt 0 ]]; do
@@ -25,8 +29,10 @@ while [[ $# -gt 0 ]]; do
     --skip-xinxi) SKIP_XINXI=1; shift ;;
     --skip-link|--xinxi-only) SKIP_LINK=1; shift ;;
     --skills-root) SKILLS_ROOT="$2"; shift 2 ;;
+    --data-root) DATA_ROOT="$2"; shift 2 ;;
+    --force-xinxi) FORCE_XINXI=1; shift ;;
     -h|--help)
-      sed -n '2,10p' "$0"
+      sed -n '2,16p' "$0"
       exit 0
       ;;
     *) echo "unknown arg: $1" >&2; exit 1 ;;
@@ -35,10 +41,26 @@ done
 
 NAMES=(zhishiku-caiji zhishiku-tilian zhishiku-gengxin zhishiku-chuli)
 
+# Windows 风格反斜杠路径可以照原样写（C:\Users\xi\.zhishiku），一律先归一成正斜杠。
+# 不要用 ${v//\\//}：它在 bash 5.3 上根本不替换反斜杠（版本间行为不一致）。
+# bash 5.2+ 的 patsub_replacement 还会把替换串里的 `&` 当成匹配文本，一并关掉。
+shopt -u patsub_replacement 2>/dev/null || true
+
+norm_path() {
+  printf '%s' "$1" | tr '\134' '/'
+}
+
 to_win_style() {
-  # /mnt/c/Users/xi/... -> C:/Users/xi/...
-  # /media/xi/系统/Users/xi/... -> C:/Users/xi/...
+  # /c/Users/xi/... (git-bash)        -> C:/Users/xi/...
+  # /mnt/c/Users/xi/... (WSL)         -> C:/Users/xi/...
+  # /media/xi/系统/Users/xi/...        -> C:/Users/xi/...
   local p="$1"
+  if [[ "$p" =~ ^/([a-zA-Z])/(.*)$ ]]; then
+    local d
+    d="$(echo "${BASH_REMATCH[1]}" | tr '[:lower:]' '[:upper:]')"
+    echo "${d}:/${BASH_REMATCH[2]}"
+    return
+  fi
   if [[ "$p" =~ ^/mnt/([a-zA-Z])/(.*)$ ]]; then
     local d
     d="$(echo "${BASH_REMATCH[1]}" | tr '[:lower:]' '[:upper:]')"
@@ -69,18 +91,34 @@ to_linux_style() {
   echo "$p"
 }
 
+# $1/$2 = the directory that CONTAINS the three *_wei dirs
+#          (repo root by default, or --data-root)
 write_xinxi() {
-  local repo_win="$1"
-  local repo_linux="$2"
-  local dir key example out
-  for dir in zhishiku-caiji zhishiku-tilian zhishiku-gengxin; do
+  local root_win="$1"
+  local root_linux="$2"
+  local dir key example out text old
+  for pair in "zhishiku-caiji:caiji_wei" "zhishiku-tilian:tilian_wei" "zhishiku-gengxin:gengxin_wei"; do
+    dir="${pair%%:*}"; key="${pair##*:}"
     example="$SRC_ROOT/$dir/xinxi.txt.example"
     out="$SRC_ROOT/$dir/xinxi.txt"
     if [[ ! -f "$example" ]]; then
       echo "warn: missing $example" >&2
       continue
     fi
-    sed -e "s|{{REPO_WIN}}|${repo_win}|g" -e "s|{{REPO_LINUX}}|${repo_linux}|g" "$example" >"$out"
+    # 用 bash 参数扩展而不是 sed：路径里可能含 \ & | 等 sed 元字符，
+    # 例如 C:\Users\xi\.zhishiku 会被 sed 当成 \U 转义而写成 C:SERSXI.ZHISHIKU。
+    text="$(cat "$example")"
+    text="${text//\{\{DATA_WIN\}\}/$root_win/$key}"
+    text="${text//\{\{DATA_LINUX\}\}/$root_linux/$key}"
+    if [[ -f "$out" ]]; then
+      old="$(cat "$out")"
+      if [[ "$old" != "$text" && "$FORCE_XINXI" -eq 0 ]]; then
+        echo "warn: $out already points somewhere else; keeping it." >&2
+        echo "      (rerun with --force-xinxi to overwrite with: $root_win/$key)" >&2
+        continue
+      fi
+    fi
+    printf '%s\n' "$text" >"$out"
     echo "wrote   $out"
   done
 }
@@ -107,6 +145,26 @@ case "$(uname -s)" in
     REPO_WIN="$SRC_ROOT"
     ;;
 esac
+
+# --data-root: keep the knowledge data outside any harness/repo dir so it is
+# shared by every harness and survives reinstalls. See docs/architecture.md.
+DATA_ROOT="$(norm_path "$DATA_ROOT")"
+SKILLS_ROOT="$(norm_path "$SKILLS_ROOT")"
+if [[ -n "$DATA_ROOT" ]]; then
+  # 先把任何写法（/c/... 、C:\... 、C:/...）转成 Windows 形式，再由它推出 Linux 形式。
+  REPO_WIN="$(to_win_style "$(norm_path "$DATA_ROOT")")"
+  REPO_LINUX="$(to_linux_style "$REPO_WIN")"
+fi
+
+# Three independent data roots live side by side under one parent dir.
+DATA_PARENT_LOCAL="${DATA_ROOT:-$SRC_ROOT}"
+# --data-root 可以指向还不存在的目录，先建出来
+[[ -n "$DATA_ROOT" ]] && mkdir -p "$DATA_PARENT_LOCAL" 2>/dev/null || true
+if [[ -d "$DATA_PARENT_LOCAL" ]]; then
+  mkdir -p "$DATA_PARENT_LOCAL"/caiji_wei \
+           "$DATA_PARENT_LOCAL"/tilian_wei \
+           "$DATA_PARENT_LOCAL"/gengxin_wei 2>/dev/null || true
+fi
 
 if [[ "$SKIP_XINXI" -eq 0 ]]; then
   write_xinxi "$REPO_WIN" "$REPO_LINUX"
@@ -145,7 +203,7 @@ fi
 
 echo
 echo "done."
-echo "  data roots : $SRC_ROOT"
+echo "  data roots : ${DATA_ROOT:-$SRC_ROOT}"
 echo "  skills root: $SKILLS_ROOT"
 echo "  triggers   : 「使用知识库系统」 / 「开启知识库系统模式」"
 echo "reopen the pi session to load skills."

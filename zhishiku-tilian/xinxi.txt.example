@@ -1,2 +1,2 @@
-tilian_wei_win: {{REPO_WIN}}/zhishiku-tilian/tilian_wei
-tilian_wei_linux: {{REPO_LINUX}}/zhishiku-tilian/tilian_wei
+tilian_wei_win: {{DATA_WIN}}
+tilian_wei_linux: {{DATA_LINUX}}

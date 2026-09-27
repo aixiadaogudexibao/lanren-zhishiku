@@ -1,2 +1,2 @@
-gengxin_wei_win: {{REPO_WIN}}/zhishiku-gengxin/gengxin_wei
-gengxin_wei_linux: {{REPO_LINUX}}/zhishiku-gengxin/gengxin_wei
+gengxin_wei_win: {{DATA_WIN}}
+gengxin_wei_linux: {{DATA_LINUX}}

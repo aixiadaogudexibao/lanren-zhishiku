@@ -1,0 +1,89 @@
+lanren-zhishiku · 一键安装说明
+================================================================
+
+这是一个「知识库系统」agent skill 模板：采集 → 提炼 → 回注 → 用知识处理任务。
+四个 skill：zhishiku-caiji / zhishiku-tilian / zhishiku-gengxin / zhishiku-chuli。
+本包不含任何领域知识，装好后从零开始攒你自己的库。
+
+
+一、Windows 一键装
+----------------------------------------------------------------
+双击  install.cmd
+
+它会做三件事：
+  1. 建数据根 %USERPROFILE%\.zhishiku\（caiji_wei / tilian_wei / gengxin_wei）
+  2. 把四个 skill 装到 %USERPROFILE%\.pi\agent\skills\
+  3. 生成各 skill 的 xinxi.txt，让它们都指向上面那一个数据根
+
+装完新开一轮 agent 会话。
+
+
+二、Linux / macOS / WSL 一键装
+----------------------------------------------------------------
+  bash install.sh --data-root ~/.zhishiku --copy
+
+（--copy 更稳；默认是符号链接。WSL 下也可以直接 bash install.cmd 的等价命令。）
+
+
+三、怎么用
+----------------------------------------------------------------
+对 agent 说：
+
+  使用知识库系统        只用知识库处理「当前这一个」请求
+  开启知识库系统模式    之后每个任务都走知识库，直到你说关闭
+  关闭知识库系统模式    恢复正常处理
+
+没有现成知识时，它会自动走「缺口 → 采集 → 提炼 → 回注」闭环，库自己长大。
+
+
+四、数据在哪（重要）
+----------------------------------------------------------------
+只有一个数据根，两种写法：
+
+  C:/Users/<你>/.zhishiku/          （Windows）
+  /media/xi/系统/Users/<你>/.zhishiku/  （本机 WSL 映射；其它机器按 install 输出的 _linux 那行为准）
+
+  caiji_wei/<领域>/     采集的案例（指令 ↔ 原始输出，逐条留痕）
+  tilian_wei/<领域>/    提炼出的知识（知识点/执行流/错误处理/指令表/判别条件）
+  gengxin_wei/<领域>/   回注后的知识容器（真正拿去执行的东西）
+
+数据**不在** skill 目录里，所以重装 skill、换 agent 运行时都不会弄丢库。
+
+
+五、如果你还用了别的 agent 运行时（例如 codex）
+----------------------------------------------------------------
+同一个包可以装多份，共用一份数据：
+
+  bash sync.sh --check                     先看哪里漂移
+  bash sync.sh                             推送到 ~/.pi/agent/skills 与 ~/.codex/skills
+  bash sync.sh --target <其它 skills 目录>  推送到自定义位置
+
+sync.sh 只写 SKILL.md 与 scripts/，**绝不动 xinxi.txt 和数据**。
+
+
+六、自检
+----------------------------------------------------------------
+  python3 tests/selftest.py        期望「失败 0」（218 项）
+  python3 tests/selftest.py -v     逐条看
+
+它会自建沙箱，不碰你的数据和仓库；顺带体检真实领域库。
+
+
+七、打新包
+----------------------------------------------------------------
+  bash pack.sh
+  # -> dist/lanren-zhishiku-<日期>.zip
+
+从 git HEAD 导出，所以先 commit 再打包。
+
+
+八、边界（别踩）
+----------------------------------------------------------------
+- 本地小模型（Ollama 等）只允许参与 zhishiku-chuli 的只读辅助；
+  caiji / tilian / gengxin 一律禁用，否则会写坏案例与容器。
+- 回注是覆盖式写，所以 gengxin 铁律是「无快照不回注」；
+  出问题用 gengxin/scripts/snapshot.py --rollback 退回去。
+- 生命周期归零的条目只标记、只问用户，**永不自动删除**。
+
+
+详情见 README.md 与 docs/。
