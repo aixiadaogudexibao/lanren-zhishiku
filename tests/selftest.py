@@ -305,7 +305,8 @@ def test_live_data():
     check("append-only 文件的 ★ 全文件唯一", not offenders,
           "; ".join(offenders[:6]))
     domains = [p for p in root.iterdir() if p.is_dir()]
-    check("至少一个领域", bool(domains), str(root))
+    if not domains:
+        print(f"  (info) {root} 下暂无领域 —— 全新安装的正常状态，跳过逐领域体检")
     for d in sorted(domains):
         vp = d / "validate.py"
         if not vp.is_file():
@@ -749,17 +750,20 @@ def test_repo_contracts():
     gi = (REPO / ".gitignore").read_text(encoding="utf-8")
     check(".gitignore 忽略 dist/", "dist/" in gi)
 
-    # 12e. .gitignore：数据根忽略、占位保留（需要 git）
-    try:
-        def ignored(rel):
-            p = subprocess.run(["git", "check-ignore", "-q", rel], cwd=REPO)
-            return p.returncode == 0
-        check("gitignore 忽略 caiji_wei 内容", ignored("caiji_wei/x.txt"))
-        check("gitignore 忽略领域知识文件", ignored("gengxin_wei/ctf-pwn/tieuli.txt"))
-        check("gitignore 保留 gengxin_wei/suoyin.txt", not ignored("gengxin_wei/suoyin.txt"))
-        check("gitignore 忽略 xinxi.txt", ignored("zhishiku-caiji/xinxi.txt"))
-    except OSError:
-        print("  (skip) 没有 git")
+    # 12e. .gitignore：数据根忽略、占位保留（需要 git 工作区）
+    if not (REPO / ".git").exists():
+        print("  (skip) 非 git 工作区（zip 解压场景），跳过 gitignore 检查")
+    else:
+        try:
+            def ignored(rel):
+                p = subprocess.run(["git", "check-ignore", "-q", rel], cwd=REPO)
+                return p.returncode == 0
+            check("gitignore 忽略 caiji_wei 内容", ignored("caiji_wei/x.txt"))
+            check("gitignore 忽略领域知识文件", ignored("gengxin_wei/ctf-pwn/tieuli.txt"))
+            check("gitignore 保留 gengxin_wei/suoyin.txt", not ignored("gengxin_wei/suoyin.txt"))
+            check("gitignore 忽略 xinxi.txt", ignored("zhishiku-caiji/xinxi.txt"))
+        except OSError:
+            print("  (skip) 没有 git")
 
 
 # ------------------------------------------------------------------ main
