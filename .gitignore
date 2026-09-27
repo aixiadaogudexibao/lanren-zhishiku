@@ -1,0 +1,24 @@
+# 本机生成的路径文件（由 install 从 .example 写出）
+**/xinxi.txt
+
+# 运行期数据：案例 / 提炼 / 知识容器内容
+**/caiji_wei/**
+!**/caiji_wei/.gitkeep
+**/tilian_wei/**
+!**/tilian_wei/.gitkeep
+**/gengxin_wei/**
+!**/gengxin_wei/.gitkeep
+!**/gengxin_wei/suoyin.txt
+
+# 编辑器 / OS
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+*~
+
+# Python
+__pycache__/
+*.pyc
+.venv/
