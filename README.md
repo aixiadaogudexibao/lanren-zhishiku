@@ -14,7 +14,7 @@ zhishiku-caiji（采集） ─▶ zhishiku-tilian（提炼） ─▶ zhishiku-ge
 
 ## 快速开始
 
-拿到发布包（zip）或 clone 後，**最省事的是双击**：
+拿到发布包（zip）或 clone 后，**最省事的是双击**：
 
 ```text
 Windows    双击 install.cmd        （数据根用 %USERPROFILE%\.zhishiku）
