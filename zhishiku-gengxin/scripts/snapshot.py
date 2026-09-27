@@ -5,7 +5,7 @@
 所以 gengxin 的协议要求**回注前先拍快照**，出问题时按快照回滚。
 
 用法：
-    python3 snapshot.py <数据根>/<领域> --take [--note "回注 ctf-pwn/0013"]
+    python3 snapshot.py <数据根>/<领域> --take [--note "回注 <领域>/<案例号>"]
     python3 snapshot.py <领域> --list
     python3 snapshot.py <领域> --rollback <快照名> [--yes]
     python3 snapshot.py <领域> --prune [--keep 5]

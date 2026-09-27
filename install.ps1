@@ -20,6 +20,11 @@
   keep the knowledge data outside the repo (and outside any harness dir) so
   every harness shares one copy. Default: the repo root.
 
+.PARAMETER LinuxPrefix
+  Linux 侧 C: 盘的前缀。默认用 WSL 标准 /mnt/c；若你的盘挂到别处
+  （例：C: -> /media/<你>/系统），传这个参数或设 ZHISHIKU_LINUX_C_PREFIX，
+  否则生成的 _linux 路径在别的机器上对不上。
+
 .PARAMETER ForceXinxi
   Overwrite an existing xinxi.txt whose contents differ. Without this, install
   keeps the existing file and warns, so a rerun cannot silently repoint your
@@ -33,12 +38,17 @@ param(
   [switch]$SkipXinxi,
   [switch]$SkipLink,
   [string]$DataRoot = '',
+  [string]$LinuxPrefix = '',
   [switch]$ForceXinxi
 )
 
 # Console may default to a legacy codepage; force UTF-8 so Chinese output is readable.
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = 'Stop'
+if (-not $LinuxPrefix) {
+  $LinuxPrefix = if ($env:ZHISHIKU_LINUX_C_PREFIX) { $env:ZHISHIKU_LINUX_C_PREFIX } else { '/mnt/c' }
+}
+$LinuxPrefix = $LinuxPrefix.TrimEnd('/')
 $SrcRoot = $PSScriptRoot
 if (-not $SkillsRoot) {
   $SkillsRoot = Join-Path $env:USERPROFILE '.pi\agent\skills'
@@ -93,10 +103,9 @@ function Write-XinxiFiles([string]$RootWin, [string]$RootLinux) {
 # $DataRoot overrides where the knowledge data lives (default: repo root).
 $dataWinSource = if ($DataRoot) { (Resolve-Path -LiteralPath (New-Item -ItemType Directory -Path $DataRoot -Force).FullName).Path } else { $SrcRoot }
 $dataWin = Get-RepoWinPath $dataWinSource
-# Dual-boot / WSL style mapping used by this project family:
-#   C:/Users/xi/...  ->  /media/xi/系统/Users/xi/...
+# Linux mapping: C: -> $LinuxPrefix（默认 /mnt/c，WSL 标准）
 if ($dataWin -match '^C:/(.*)$') {
-  $dataLinux = '/media/xi/系统/' + $Matches[1]
+  $dataLinux = $LinuxPrefix + '/' + $Matches[1]
 } elseif ($dataWin -match '^([A-Za-z]):/(.*)$') {
   $d = $Matches[1].ToLower()
   $dataLinux = "/mnt/$d/$($Matches[2])"

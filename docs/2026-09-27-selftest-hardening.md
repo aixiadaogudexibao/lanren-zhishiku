@@ -2,7 +2,9 @@
 
 日期：2026-09-27
 状态：已实施
-关联任务：`planing-biao` / `C:/Users/xi/zhishiku`（测试加固，无独立任务号）
+关联任务：planing-biao（测试加固，无独立任务号）
+> 本文记录来自作者本机环境；文中的领域名、案例号、条目计数已做脱敏。
+
 
 ## 为什么写这套测试
 
@@ -26,9 +28,9 @@
 - 「`★` 必须全文件唯一」；
 - 采集协议写的是 `Edit: oldText = "★"`——两个 `★` 时这个编辑**锚点歧义**，在弱工具上会改到注释里那个、把哨兵弄丢。
 
-真实数据中招 **13 个 `qingdan.txt` + 3 个 `yongfa.txt`**。改模板措辞（不含 `★`）+ 数据迁移（备份 `_migrate_bak-20260927/`）。
+真实数据中招 **十几个 `qingdan.txt` + 几个 `yongfa.txt`**。改模板措辞（不含 `★`）+ 数据迁移（迁移前先做了备份）。
 
-### 2. `0007/buzou/04.txt` 里混进工具调用 JSON 碎片（数据已损坏）
+### 2. 某个 `buzou/NN.txt` 里混进工具调用 JSON 碎片（数据已损坏）
 
 该文件整段执行流被写成**一个物理行**、`\n` 全是字面量，尾部是：
 
@@ -40,7 +42,7 @@
 
 机械修复：砍掉 JSON 碎片、只把「字段标签 / `-> ` / `★`」之前的字面 `\n` 还原为真换行（**保住 `printf ... echo PWNED\n` 里真正的转义**）、哨兵复位。原件备份。
 
-### 3. `H.hook.trig.txt` 正文里有非法 `★`
+### 3. 某张卡片的正文里有非法 `★`
 
 知识卡片内容含 `★`，同类不一致，改成 `→`。
 
@@ -58,7 +60,7 @@
 
 ### 6. `install.sh` 传 Windows 反斜杠路径会写出乱码（致命）
 
-`--data-root 'C:\Users\xi\.zhishiku'` 生成的 `xinxi.txt` 是：
+`--data-root 'C:\Users\<用户>\.zhishiku'`（反斜杠写法）生成的 `xinxi.txt` 曾是：
 
 ```
 caiji_wei_win: C:SERSXI.ZHISHIKU/CAIJI_WEI
@@ -96,7 +98,7 @@ install.sh: line 13: set: pipefail
 - `install.sh`：路径归一、弃用 sed、`shopt -u patsub_replacement`、`mkdir -p $DATA_ROOT`、`to_win_style` 支持 `/c/...`。
 - `sync.sh`：bash 侧显式 `to_win()`（不再依赖 MSYS 的 env/argv 改写）；`segment_for` 改为「最近的 `.` 祖先目录」（原来目标不在 `$HOME` 下时会取出一长串无关中间路径）。
 - `zhishiku-gengxin/scripts/yongfa.py`：`read_raw()` + CRLF 容忍哨兵正则。
-- 数据侧：13 个 `qingdan.txt` 表头、3 个 `yongfa.txt` 表头、1 个损坏的 `buzou/04.txt`、1 个含非法 `★` 的卡片（备份在 `_migrate_bak-20260927/`）。
+- 数据侧：十几个 `qingdan.txt` 表头、几个 `yongfa.txt` 表头、1 个损坏的 `buzou` 文件、1 个含非法 `★` 的卡片（迁移前都做了备份）。
 - 四份 SKILL.md：补「表头/注释里不得出现 `★`」规则。
 
 ## 验证
@@ -106,4 +108,4 @@ python3 tests/selftest.py      # 218 项，失败 0
 bash sync.sh --check           # all targets in sync
 ```
 
-真实数据：`ctf-pwn` 56 卡 ✅、`ai_iot` 19 卡 ✅（8 条悬空来源是外部样本库在 Linux 挂载点，与本工作无关）。
+真实数据：作者两个领域的卡片全部通过 ✅（部分悬空来源是外部样本库在 Linux 挂载点，与本工作无关）。

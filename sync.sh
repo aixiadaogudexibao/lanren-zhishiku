@@ -5,7 +5,7 @@
 #   repo/*/SKILL.md   --sync-->   <target-root>/*/SKILL.md
 #
 # Per-target rewrite: the source uses `.pi/agent` as the canonical harness
-# segment inside example paths (e.g. `C:/Users/xi/.pi/agent/skills/...`). Each
+# segment inside example paths (e.g. `C:/Users/<user>/.pi/agent/skills/...`). Each
 # target gets its own segment substituted in, so a `.codex` install reads
 # `.codex`. Byte-for-byte identical otherwise (line endings preserved).
 #

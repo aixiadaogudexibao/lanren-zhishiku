@@ -350,12 +350,7 @@ def test_e2e_correction(sb: Path):
         "# 常见错误\n\n## 臆断步骤依赖顺序\n现象：用户反对 agent 判断「先装 qq 再看音乐」\n"
         "原因：把工具依赖当成先决条件，没有先问清依赖\n处理：先确认各步骤依赖，再决定顺序\n"
         "适用：多步骤任务\n归属：合理化表\n来源：e2e/0001 buzou/01.txt 步骤a\n", encoding="utf-8")
-    real = None
-    for cand in (REPO / "zhishiku-gengxin" / "xinxi.txt",):
-        if cand.is_file():
-            m = re.search(r"gengxin_wei_win:\s*(\S+)", cand.read_text(encoding="utf-8"))
-            if m and (Path(m.group(1)) / "ctf-pwn" / "validate.py").is_file():
-                real = Path(m.group(1)) / "ctf-pwn" / "validate.py"
+    real, _dom = _find_real_validate()
     if real:
         shutil.copy(real, d / "validate.py")
         (d / "tieuli.txt").write_text("# 铁律\n", encoding="utf-8")
@@ -456,15 +451,43 @@ def test_key_contract(sb: Path):
 
 
 # ------------------------------------------------------------------ 10 破坏矩阵
+def _find_real_validate():
+    """找一个真实的领域 validate.py，并返回 (它的路径, 它所属的领域名)。
+
+    不写死领域名：作者本机的领域名不该出现在模板仓里（发布前已脉敏）。
+    """
+    xin = REPO / "zhishiku-gengxin" / "xinxi.txt"
+    if not xin.is_file():
+        return None, None
+    m = re.search(r"gengxin_wei_win:\s*(\S+)", xin.read_text(encoding="utf-8"))
+    if not m:
+        return None, None
+    root = Path(m.group(1))
+    if not root.is_dir():
+        return None, None
+    cands = sorted(root.glob("*/validate.py"))
+    # 优先挑「检查项最全」的那份（破坏矩阵需要它支持 卡片引用 / cuowu 三段式 /
+    # 悬空来源 等全部检查）；本机领域名不写死，从目录名取。
+    for vp in cands:
+        body = vp.read_text(encoding="utf-8", errors="replace")
+        if "段落" in body and "悬空来源" in body and "孤儿卡片" in body:
+            return vp, vp.parent.name
+    if cands:
+        return cands[0], cands[0].parent.name
+    return None, None
+
+
 def _validated_domain(sb: Path, name="vdom"):
-    """造一个能通过 ctf-pwn/validate.py 的领域（含 caiji 归档使来源不悬空）。"""
+    """照任一真实领域的 validate.py 造一个能通过它的领域（含 caiji 归档使来源不悬空）。"""
+    real, dom = _find_real_validate()
+    dom = dom or "my-domain"
     root = sb / name
-    d = root / "gengxin_wei" / "ctf-pwn"
-    (root / "caiji_wei" / "ctf-pwn" / "biao" / "hui" / "0001").mkdir(parents=True)
+    d = root / "gengxin_wei" / dom
+    (root / "caiji_wei" / dom / "biao" / "hui" / "0001").mkdir(parents=True)
     (d / "liucheng_biao").mkdir(parents=True)
     (d / "tools").mkdir()
     (d / "tieuli.txt").write_text(
-        "# 铁律\n\n- 要点一\n  来源：ctf-pwn/0001 buzou/01.txt 步骤a\n", encoding="utf-8")
+        f"# 铁律\n\n- 要点一\n  来源：{dom}/0001 buzou/01.txt 步骤a\n", encoding="utf-8")
     (d / "yuanze.txt").write_text("# 概述原则\n", encoding="utf-8")
     (d / "bianjie.txt").write_text("# 边界\n", encoding="utf-8")
     (d / "cuowu.txt").write_text(
@@ -472,20 +495,12 @@ def _validated_domain(sb: Path, name="vdom"):
     (d / "liucheng.txt").write_text(
         "# 执行流\n\nliucheng_biao/A.1\n", encoding="utf-8")
     (d / "liucheng_biao" / "A.1.txt").write_text(
-        "# A.1 · 一步\n\n## 时机\n- a\n\n## 条件\n- b\n\n## 做什么\n- c\n\n## 下一跳\n- d\n\n## 来源\n- ctf-pwn/0001 buzou/01.txt\n",
+        f"# A.1 · 一步\n\n## 时机\n- a\n\n## 条件\n- b\n\n## 做什么\n- c\n\n## 下一跳\n- d\n\n## 来源\n- {dom}/0001 buzou/01.txt\n",
         encoding="utf-8")
     (d / "zhiling.txt").write_text("# 命令速查\n", encoding="utf-8")
     for f, head in (("suoyin.txt", "# 案例id | 产出条目"), ("rizhi.txt", "# 更新日志"),
                     ("yongfa.txt", "# 实战使用日志")):
         (d / f).write_text(head + "\n★\n", encoding="utf-8")
-    real = None
-    xin = REPO / "zhishiku-gengxin" / "xinxi.txt"
-    if xin.is_file():
-        m = re.search(r"gengxin_wei_win:\s*(\S+)", xin.read_text(encoding="utf-8"))
-        if m:
-            cand = Path(m.group(1)) / "ctf-pwn" / "validate.py"
-            if cand.is_file():
-                real = cand
     if real is None:
         return d, None
     shutil.copy(real, d / "validate.py")
@@ -534,7 +549,7 @@ def test_validate_matrix(sb: Path):
     mut("缺 liucheng_biao 目录", lambda: shutil.rmtree(d / "liucheng_biao"),
         "缺 liucheng_biao/ 目录")
     mut("tieuli 条目缺来源", lambda: (d / "tieuli.txt").write_text(
-        "# 铁律\n\n- 要点一\n  来源：ctf-pwn/0001 buzou/01.txt 步骤a\n- 要点二\n", encoding="utf-8"),
+        "# 铁律\n\n- 要点一\n  来源：my-domain/0001 buzou/01.txt 步骤a\n- 要点二\n", encoding="utf-8"),
         "条目 2 / 来源 1", kind="warn")
     mut("cuowu 段缺三段式", lambda: (d / "cuowu.txt").write_text(
         "# 常见错误\n\n## 错误甲\n现象：x\n原因：y\n处理：z\n\n## 错误乙\n现象：x\n",
@@ -546,10 +561,11 @@ def test_validate_matrix(sb: Path):
     mut("卡片缺字段", lambda: (d / "liucheng_biao" / "A.1.txt").write_text(
         "# A.1\n\n## 时机\n- a\n", encoding="utf-8"),
         "缺字段 条件", kind="warn")
+    dom = d.name
     mut("来源悬空", lambda: (d / "liucheng_biao" / "A.1.txt").write_text(
-        "# A.1\n\n## 时机\n- a\n\n## 条件\n- b\n\n## 做什么\n- c\n\n## 下一跳\n- d\n\n## 来源\n- ctf-pwn/9999 buzou/01.txt\n",
+        f"# A.1\n\n## 时机\n- a\n\n## 条件\n- b\n\n## 做什么\n- c\n\n## 下一跳\n- d\n\n## 来源\n- {dom}/9999 buzou/01.txt\n",
         encoding="utf-8"),
-        "悬空来源: ctf-pwn/9999", kind="warn")
+        f"悬空来源: {dom}/9999", kind="warn")
     shutil.rmtree(pristine, ignore_errors=True)
 
 
@@ -563,7 +579,7 @@ def _fake_repo(base: Path, skills=("zhishiku-caiji", "zhishiku-tilian", "zhishik
         (base / n).mkdir(parents=True, exist_ok=True)
         (base / n / "SKILL.md").write_text(
             f'---\nname: {n}\ndescription: x\nmetadata:\n  version: "1.0.0"\n---\n\n'
-            f'# {n}\n\n路径例：`C:/Users/xi/.pi/agent/skills/{n}/x`\n'
+            f'# {n}\n\n路径例：`C:/Users/tester/.pi/agent/skills/{n}/x`\n'
             f'与 `C:\\Users\\xi\\.pi\\agent\\skills\\{n}`\n',
             encoding="utf-8")
     for n, key in (("zhishiku-caiji", "caiji_wei"), ("zhishiku-tilian", "tilian_wei"),
@@ -572,7 +588,7 @@ def _fake_repo(base: Path, skills=("zhishiku-caiji", "zhishiku-tilian", "zhishik
             f"{key}_win: {{{{DATA_WIN}}}}\n{key}_linux: {{{{DATA_LINUX}}}}\n", encoding="utf-8")
     (base / "zhishiku-gengxin" / "scripts").mkdir(exist_ok=True)
     (base / "zhishiku-gengxin" / "scripts" / "yongfa.py").write_text(
-        '# 路径例 C:/Users/xi/.pi/agent/skills/x\n', encoding="utf-8")
+        '# 路径例 C:/Users/tester/.pi/agent/skills/x\n', encoding="utf-8")
     return base
 
 
@@ -621,9 +637,26 @@ def test_install(sb: Path):
     check("建了三个数据根", all((droot / k).is_dir() for k in ("caiji_wei", "tilian_wei", "gengxin_wei")),
           str(list(droot.iterdir()) if droot.is_dir() else None))
     check("四个 skill 已复制", all((skills / n / "SKILL.md").is_file()
-                                for n in ("zhishiku-caiji", "zhishiku-tilian",
-                                          "zhishiku-gengxin", "zhishiku-chuli")),
+                                 for n in ("zhishiku-caiji", "zhishiku-tilian",
+                                           "zhishiku-gengxin", "zhishiku-chuli")),
           str(sorted(p.name for p in skills.iterdir()) if skills.is_dir() else None))
+
+    # Linux 侧挂载前缀：默认 WSL 标准 /mnt/c，可用环境变量/参数覆盖
+    # （写死某个人的双系统挂载，别人 clone 后会拿到对不上的 _linux 路径）
+    check("默认 _linux 用 WSL 标准 /mnt/c", "/mnt/c/" in xin, xin)
+    _bash(["install.sh", "--skip-link", "--force-xinxi", "--data-root", posix(droot)],
+          cwd=repo, env={"SKILLS_ROOT": posix(skills),
+                         "ZHISHIKU_LINUX_C_PREFIX": "/opt/wsl-mount"})
+    xin2 = (repo / "zhishiku-caiji" / "xinxi.txt").read_text(encoding="utf-8")
+    check("环境变量可覆盖 Linux 前缀", "/opt/wsl-mount/" in xin2 and "/mnt/c/" not in xin2, xin2)
+    _bash(["install.sh", "--skip-link", "--force-xinxi", "--data-root", posix(droot),
+           "--linux-prefix", "/x/y"], cwd=repo, env={"SKILLS_ROOT": posix(skills)})
+    xin3 = (repo / "zhishiku-caiji" / "xinxi.txt").read_text(encoding="utf-8")
+    check("--linux-prefix 生效", "/x/y/" in xin3, xin3)
+    # 回到默认，后面的用例继续用 xin
+    _bash(["install.sh", "--skip-link", "--force-xinxi", "--data-root", posix(droot)],
+          cwd=repo, env={"SKILLS_ROOT": posix(skills)})
+    xin = (repo / "zhishiku-caiji" / "xinxi.txt").read_text(encoding="utf-8")
 
     before = xin
     rc, out = _bash(["install.sh", "--skip-link", "--skip-xinxi"], cwd=repo, env={"SKILLS_ROOT": posix(skills)})
@@ -750,6 +783,33 @@ def test_repo_contracts():
     gi = (REPO / ".gitignore").read_text(encoding="utf-8")
     check(".gitignore 忽略 dist/", "dist/" in gi)
 
+    # 12h. 全仓不得残留作者本机专属痕迹（发布前脱敏的回归守门）
+    # 注意：被检查的敏感串必须拼接生成，否则守门测试自己就把它泄了。
+    U = "xi"
+    BS = chr(92)
+    # 注意：被检查的敏感串必须拼接生成，否则守门测试自己就把它泄了。
+    U = "xi"
+    BS = chr(92)
+    lits = [
+        "/media/" + U + "/",
+        "C:/Users/" + U,
+        "C:" + BS + "Users" + BS + U,
+        "migrate" + "_bak",
+    ]
+    pats = [r"ctf-pwn/\d", r"ai_iot/CASE-\d"]
+    leak_pat = re.compile("|".join([re.escape(x) for x in lits] + pats))
+    leaked = []
+    # 只扫 git 跟踪的文件 —— 被 ignore 的 xinxi.txt 本来就该写本机路径
+    tracked = subprocess.run(["git", "ls-files"], cwd=REPO, capture_output=True,
+                             text=True, encoding="utf-8").stdout.split()
+    for rel in tracked:
+        q = REPO / rel
+        if ("tests" in q.parts) or (not q.is_file()):
+            continue
+        body = q.read_text(encoding="utf-8", errors="replace")
+        for m in leak_pat.finditer(body):
+            leaked.append(f"{rel}: {m.group(0)}")
+    check("发布文件里无作者本机专属痕迹（已脱敏）", not leaked, "; ".join(leaked[:8]))
     # 12e. .gitignore：数据根忽略、占位保留（需要 git 工作区）
     if not (REPO / ".git").exists():
         print("  (skip) 非 git 工作区（zip 解压场景），跳过 gitignore 检查")
@@ -759,7 +819,7 @@ def test_repo_contracts():
                 p = subprocess.run(["git", "check-ignore", "-q", rel], cwd=REPO)
                 return p.returncode == 0
             check("gitignore 忽略 caiji_wei 内容", ignored("caiji_wei/x.txt"))
-            check("gitignore 忽略领域知识文件", ignored("gengxin_wei/ctf-pwn/tieuli.txt"))
+            check("gitignore 忽略领域知识文件", ignored("gengxin_wei/my-domain/tieuli.txt"))
             check("gitignore 保留 gengxin_wei/suoyin.txt", not ignored("gengxin_wei/suoyin.txt"))
             check("gitignore 忽略 xinxi.txt", ignored("zhishiku-caiji/xinxi.txt"))
         except OSError:

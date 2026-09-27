@@ -7,12 +7,18 @@
 #   bash install.sh --force
 #   bash install.sh --skip-xinxi
 #   bash install.sh --data-root ~/.zhishiku       # one data root shared by all harnesses
+#   bash install.sh --linux-prefix /media/u/系统   # C: 在 Linux 侧的挂载前缀（默认 /mnt/c）
 #   bash install.sh --force-xinxi                  # overwrite an existing xinxi.txt
 #   SKILLS_ROOT=/path bash install.sh
 
 set -euo pipefail
 
 SRC_ROOT="$(cd "$(dirname "$0")" && pwd)"
+# Linux 侧 C: 盘的前缀。默认用 WSL 标准 /mnt/c；
+# 若你的盘挂到别处（例：C: -> /media/<你>/系统），用 --linux-prefix 或
+# 环境变量 ZHISHIKU_LINUX_C_PREFIX 覆盖，否则生成的 _linux 路径在别的机器上对不上。
+LINUX_C_PREFIX="${ZHISHIKU_LINUX_C_PREFIX:-/mnt/c}"
+
 MODE=link
 FORCE=0
 SKIP_XINXI=0
@@ -30,6 +36,7 @@ while [[ $# -gt 0 ]]; do
     --skip-link|--xinxi-only) SKIP_LINK=1; shift ;;
     --skills-root) SKILLS_ROOT="$2"; shift 2 ;;
     --data-root) DATA_ROOT="$2"; shift 2 ;;
+    --linux-prefix) LINUX_C_PREFIX="$2"; shift 2 ;;
     --force-xinxi) FORCE_XINXI=1; shift ;;
     -h|--help)
       sed -n '2,16p' "$0"
@@ -41,7 +48,7 @@ done
 
 NAMES=(zhishiku-caiji zhishiku-tilian zhishiku-gengxin zhishiku-chuli)
 
-# Windows 风格反斜杠路径可以照原样写（C:\Users\xi\.zhishiku），一律先归一成正斜杠。
+# Windows 风格反斜杠路径可以照原样写（C:\Users\<用户>\.zhishiku），一律先归一成正斜杠。
 # 不要用 ${v//\\//}：它在 bash 5.3 上根本不替换反斜杠（版本间行为不一致）。
 # bash 5.2+ 的 patsub_replacement 还会把替换串里的 `&` 当成匹配文本，一并关掉。
 shopt -u patsub_replacement 2>/dev/null || true
@@ -51,9 +58,9 @@ norm_path() {
 }
 
 to_win_style() {
-  # /c/Users/xi/... (git-bash)        -> C:/Users/xi/...
-  # /mnt/c/Users/xi/... (WSL)         -> C:/Users/xi/...
-  # /media/xi/系统/Users/xi/...        -> C:/Users/xi/...
+  # /c/Users/<用户>/...      (git-bash)  -> C:/Users/<用户>/...
+  # /mnt/c/Users/<用户>/...  (WSL)       -> C:/Users/<用户>/...
+  # <--linux-prefix>/...                -> C:/...
   local p="$1"
   if [[ "$p" =~ ^/([a-zA-Z])/(.*)$ ]]; then
     local d
@@ -67,8 +74,8 @@ to_win_style() {
     echo "${d}:/${BASH_REMATCH[2]}"
     return
   fi
-  if [[ "$p" == /media/xi/系统/* ]]; then
-    echo "C:/${p#/media/xi/系统/}"
+  if [[ "$p" == "${LINUX_C_PREFIX%/}"/* ]]; then
+    echo "C:/${p#${LINUX_C_PREFIX%/}/}"
     return
   fi
   # Already windows-ish or unknown: keep as-is for _linux, mirror for _win best-effort
@@ -82,7 +89,7 @@ to_linux_style() {
     d="$(echo "${BASH_REMATCH[1]}" | tr '[:lower:]' '[:upper:]')"
     local rest="${BASH_REMATCH[2]}"
     if [[ "$d" == "C" ]]; then
-      echo "/media/xi/系统/${rest}"
+      printf '%s' "${LINUX_C_PREFIX%/}/${rest}"
     else
       echo "/mnt/$(echo "$d" | tr '[:upper:]' '[:lower:]')/${rest}"
     fi
@@ -106,7 +113,7 @@ write_xinxi() {
       continue
     fi
     # 用 bash 参数扩展而不是 sed：路径里可能含 \ & | 等 sed 元字符，
-    # 例如 C:\Users\xi\.zhishiku 会被 sed 当成 \U 转义而写成 C:SERSXI.ZHISHIKU。
+    # 例如把路径里的 \U 当成转义，作者曾因此生成 C:SERSXI.ZHISHIKU 这种乱码。
     text="$(cat "$example")"
     text="${text//\{\{DATA_WIN\}\}/$root_win/$key}"
     text="${text//\{\{DATA_LINUX\}\}/$root_linux/$key}"

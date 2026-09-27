@@ -41,7 +41,7 @@ lanren-zhishiku · 一键安装说明
 只有一个数据根，两种写法：
 
   C:/Users/<你>/.zhishiku/          （Windows）
-  /media/xi/系统/Users/<你>/.zhishiku/  （本机 WSL 映射；其它机器按 install 输出的 _linux 那行为准）
+  /mnt/c/Users/<你>/.zhishiku/       （WSL 标准；挂载前缀不同就用 install --linux-prefix 覆盖）
 
   caiji_wei/<领域>/     采集的案例（指令 ↔ 原始输出，逐条留痕）
   tilian_wei/<领域>/    提炼出的知识（知识点/执行流/错误处理/指令表/判别条件）

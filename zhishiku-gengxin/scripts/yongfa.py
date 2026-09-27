@@ -12,7 +12,7 @@
     python3 yongfa.py <数据根>/<领域> [--all]
 
     # 2) 推进一个轮次 —— chuli 每处理完一个任务调一次
-    python3 yongfa.py <领域> --tick --date 2026-09-27 [--case ctf-pwn/0013] \
+    python3 yongfa.py <领域> --tick --date 2026-09-27 [--case <领域>/<案例号>] \
                         [--used KEY=结果[:备注],...] [--life 3]
 
     # 3) 用户裁决（生命周期归零、已询问用户之后）

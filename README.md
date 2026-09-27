@@ -24,13 +24,13 @@ Linux/mac  bash install.sh --copy --data-root ~/.zhishiku
 也可手动跑：
 
 ```powershell
-git clone <你的仓库 URL> lanren-zhishiku
+git clone https://github.com/aixiadaogudexibao/lanren-zhishiku.git lanren-zhishiku
 cd lanren-zhishiku
 .\install.ps1 -DataRoot $env:USERPROFILE\.zhishiku
 ```
 
 ```bash
-git clone <你的仓库 URL> lanren-zhishiku
+git clone https://github.com/aixiadaogudexibao/lanren-zhishiku.git lanren-zhishiku
 cd lanren-zhishiku
 bash install.sh --copy --data-root ~/.zhishiku
 ```
@@ -171,7 +171,7 @@ cp -a examples/domain-skeleton <数据根>/gengxin_wei/your-domain
 
 ```text
 *_win:   C:/.../.zhishiku/caiji_wei
-*_linux: /media/xi/系统/.../.zhishiku/caiji_wei
+*_linux: /mnt/c/Users/<你>/.zhishiku/caiji_wei   # 挂载前缀不同用 --linux-prefix
 ```
 
 数据根换了位置（例如仓库挪了目录，或改用 `--data-root`）时，重跑一次 `install` 并加 `--force-xinxi`；或手改三份 `xinxi.txt`（`zhishiku-caiji` / `zhishiku-tilian` / `zhishiku-gengxin` 各一份）。`zhishiku-chuli` 没有 `xinxi.txt`，它从 gengxin 那份读取数据根。
@@ -188,8 +188,8 @@ Ollama 等本地小模型**不要**参与 caiji / tilian / gengxin 写库；只�
 2. 本地：
 
 ```bash
-cd /path/to/lanren-zhishiku   # 或 C:/Users/xi/zhishiku
-git remote add origin git@github.com:<USER>/lanren-zhishiku.git
+cd /path/to/lanren-zhishiku
+git remote add origin https://github.com/aixiadaogudexibao/lanren-zhishiku.git
 git push -u origin main
 ```
 

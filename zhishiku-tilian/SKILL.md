@@ -94,8 +94,9 @@ tilian_wei_linux: <Linux 数据根绝对路径>
 
 按当前运行环境选取：
 
-- **Windows** → 取 `tilian_wei_win`（形如 `C:/Users/xi/.pi/agent/skills/...`）。
-- **Linux**（含 WSL）→ 取 `tilian_wei_linux`（形如 `/media/xi/系统/Users/xi/.pi/agent/skills/...`）。
+- **Windows** → 取 `tilian_wei_win`（形如 `C:/Users/<用户>/...`）。
+- **Linux**（含 WSL）→ 取 `tilian_wei_linux`（形如 `/mnt/c/Users/<用户>/...`；
+  挂载前缀不是 `/mnt/c` 的机器，以 `install --linux-prefix` 写出的那一行为准）。
 - 旧单行 `<根名>: <路径>` → 按当前 OS 判断；不可访问则询问用户补写另一平台路径。
 
 两行必须指向同一份数据根；不一致 → 停下询问。缺失/为空 → 询问用户后初始化（默认 `<skill 目录>/tilian_wei/`），并把两平台路径写入 `xinxi.txt`。

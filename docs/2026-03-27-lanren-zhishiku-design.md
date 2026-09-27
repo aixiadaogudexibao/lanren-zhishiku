@@ -6,7 +6,7 @@
 ## 目标
 
 公开 GitHub 模板仓：clone → install → 新开 pi 会话即可使用知识库四层闭环。  
-不含维护者本地领域知识（ctf-pwn / ai_iot / python-env 等）。
+不含维护者本地领域知识（作者的领域名与内容都不进仓）。
 
 ## 非目标
 
@@ -17,7 +17,7 @@
 ## 仓库结构
 
 ```text
-lanren-zhishiku/          # 工作目录现为 C:/Users/xi/zhishiku，远程名 lanren-zhishiku
+lanren-zhishiku/          # 仓名即远程名
 ├── README.md
 ├── LICENSE                 # MIT
 ├── CONTRIBUTING.md
@@ -37,7 +37,7 @@ lanren-zhishiku/          # 工作目录现为 C:/Users/xi/zhishiku，远程名 
 
 - 仓内提交 `xinxi.txt.example`（占位符），**不**提交含本机绝对路径的 `xinxi.txt`
 - `install` 根据仓库实际位置生成三份 `xinxi.txt`（`_win` + `_linux` 两行）
-- Linux 行：若检测到 WSL/`/media/xi/系统` 映射则写入映射路径，否则写入与 win 等价的说明性路径或同一相对解析结果
+- Linux 行：默认按 WSL 标准 `/mnt/c` 推导，可用 `--linux-prefix` 覆盖（见 install.sh）
 
 ## 安装行为
 

@@ -80,8 +80,9 @@ gengxin_wei_linux: <Linux 数据根绝对路径>
 
 按当前运行环境选取：
 
-- **Windows** → 取 `gengxin_wei_win`（形如 `C:/Users/xi/.pi/agent/skills/...`）。
-- **Linux**（含 WSL）→ 取 `gengxin_wei_linux`（形如 `/media/xi/系统/Users/xi/.pi/agent/skills/...`）。
+- **Windows** → 取 `gengxin_wei_win`（形如 `C:/Users/<用户>/...`）。
+- **Linux**（含 WSL）→ 取 `gengxin_wei_linux`（形如 `/mnt/c/Users/<用户>/...`；
+  挂载前缀不是 `/mnt/c` 的机器，以 `install --linux-prefix` 写出的那一行为准）。
 - 旧单行 `<根名>: <路径>` → 按当前 OS 判断是否可访问；不可访问 → 询问用户补写另一平台路径，改回两行格式。
 
 两行必须指向同一份数据根；不一致 → 停下询问，不得自行挑选。
@@ -264,8 +265,8 @@ liucheng_biao/<标号>.txt # 详解：一步一卡
 ```text
 # 实战使用日志（append-only；写入位＝文末的哨兵行）
 # 日期 | 键 | 结果 | 案例id | 备注
-2026-09-27 | liucheng_biao/H.leak.3 | 成 | ctf-pwn/0013 | -
-2026-09-27 | tools/libcsearch | 败 | ctf-pwn/0013 | 多解未 add_condition
+2026-09-27 | liucheng_biao/<标号> | 成 | <领域>/<案例号> | -
+2026-09-27 | tools/<工具名> | 败 | <领域>/<案例号> | 多解未消歧
 ★
 ```
 
@@ -275,7 +276,7 @@ liucheng_biao/<标号>.txt # 详解：一步一卡
 |---|---|---|
 | 执行流卡片 | `liucheng_biao/<标号>` | `liucheng_biao/H.leak.3` |
 | 工具规范 | `tools/<工具名>` | `tools/libcsearch` |
-| 错误处理段 | `cuowu/<错误特征>` | `cuowu/hook间接引用内存被覆盖` |
+| 错误处理段 | `cuowu/<错误特征>` | `cuowu/权限被拒` |
 | 命令速查行 | `zhiling/<操作>` | `zhiling/搜索本地软件` |
 
 - 结果 ∈ `成` / `败`（只有两态；早期设计里的「部分」已废除——判不准就记 `败`，别留中间态）。

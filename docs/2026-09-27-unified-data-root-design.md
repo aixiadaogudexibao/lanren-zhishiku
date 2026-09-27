@@ -2,7 +2,9 @@
 
 日期：2026-09-27
 状态：已实施
-关联任务：`planing-biao` / `C:/Users/xi/zhishiku` / pk-000
+关联任务：planing-biao / pk-000
+> 本文记录来自作者本机环境；文中的领域名、案例号、条目计数已做脱敏。
+
 
 ## 背景
 
@@ -11,7 +13,7 @@ skill 定义（`SKILL.md`）在仓库里是唯一源，运行时有多个副本�
 | 位置 | SKILL.md | 数据 |
 |---|---|---|
 | `~/zhishiku`（仓） | 源 | 空（gitignore） |
-| `~/.pi/agent/skills` | 与仓逐字节相同 | 一份（ai_iot / ctf-pwn / python-env） |
+| `~/.pi/agent/skills` | 与仓逐字节相同 | 一份（作者的领域库） |
 | `~/.codex/skills` | 仅差 harness 前缀 + 行尾 | 另一份（同上，手工镜像） |
 
 ## 问题
@@ -19,12 +21,12 @@ skill 定义（`SKILL.md`）在仓库里是唯一源，运行时有多个副本�
 1. **重装即风险** —— `install --force` 或重新生成 `xinxi.txt` 会把数据根指到空目录，知识库"消失"。
 2. **换 harness 丢库** —— 数据住在 harness 目录里，不属于任何持久位置。
 3. **多 harness 分裂** —— 同一知识库出现两条分叉，且靠手工镜像保持一致。
-4. **路径污染样本** —— 采集时若执行的命令引用 harness 路径，`->` 块的「结果」会因 harness 而异（实例：`caiji_wei/ctf-pwn/biao/hui/0011/buzou/01.txt` 在两侧记录了不同的 `.pi` / `.codex` 路径）。这违反「结果 = 原始输出」的可移植性。
+4. **路径污染样本** —— 采集时若执行的命令引用 harness 路径，`->` 块的「结果」会因 harness 而异（实例：某案例的 `buzou/NN.txt` 在两侧记录了不同的 `.pi` / `.codex` 路径）。这违反「结果 = 原始输出」的可移植性。
 
 同时发现两个既存缺陷：
 
 - `install.ps1` 为 UTF-8 **无 BOM**，PowerShell 5.1 在 GBK 代码页下按 GBK 解码 → 直接语法错误，脚本根本无法运行。
-- `validate.py` 硬编码 `/media/xi/系统/Users/xi/.pi/agent/...`，且 `print` emoji 在 Windows GBK 控制台崩溃 → 只在 Linux 可跑。
+- `validate.py` 硬编码了 harness 绝对路径，且 `print` emoji 在 Windows GBK 控制台崩溃 → 只在 Linux 可跑。
 
 ## 决策
 
@@ -44,7 +46,7 @@ skill 定义（`SKILL.md`）在仓库里是唯一源，运行时有多个副本�
 - `sync.sh`（新增）：`--check` 只读校验；默认目标 `~/.pi/agent/skills`、`~/.codex/skills`。
 - 占位文件迁到数据根布局：`{caiji,tilian,gengxin}_wei/.gitkeep`、`gengxin_wei/suoyin.txt`。
 - `README.md` / `docs/architecture.md`：新增「多 harness / 统一数据根」与「多 harness 同步」。
-- 数据侧（中立根内）：`validate.py`（ctf-pwn / ai_iot）改为相对推导 caiji 路径 + 强制 UTF-8 stdout。
+- 数据侧（中立根内）：各领域的 `validate.py` 改为相对推导 caiji 路径 + 强制 UTF-8 stdout。
 
 ## 非目标
 
@@ -56,5 +58,5 @@ skill 定义（`SKILL.md`）在仓库里是唯一源，运行时有多个副本�
 
 - `bash sync.sh --check` → `all targets in sync`（幂等）。
 - 仓 vs `~/.pi`：逐字节相同；仓 vs `~/.codex`：仅差 harness 前缀。
-- `bash install.sh --skip-link`（不带 `--force-xinxi`）→ 警告并保住 `C:/Users/xi/.zhishiku`。
-- `python validate.py`：ctf-pwn 56 卡全通过；ai_iot 19 卡通过（8 条悬空来源为外部样本库在 Linux 挂载点，与本次无关）。
+- `bash install.sh --skip-link`（不带 `--force-xinxi`）→ 警告并保住原数据根。
+- `python validate.py`：作者两个领域的卡片全部通过（部分悬空来源是外部样本库在 Linux 挂载点，与本次无关）。

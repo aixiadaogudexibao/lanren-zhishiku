@@ -64,7 +64,7 @@ metadata:
   - `shengming.txt` 条目生命周期表（**只读**；收尾时由本 skill 维护，见「7 收尾记账」）
   - `liucheng_jiu_shupai.txt` 若存在：旧竖排备份，**仅**当总览指向「尚未卡片化」时按需翻阅
 
-知识库根来源：读 `zhishiku-gengxin/xinxi.txt`（键 `gengxin_wei`）。该文件含两行路径 `gengxin_wei_win` / `gengxin_wei_linux`，**按当前运行环境选**：Windows 取 `_win`（`C:/...`），Linux/WSL 取 `_linux`（`/media/xi/...`）；两行指向同一个文件夹。旧单行 `gengxin_wei: <路径>` 则按当前 OS 判断是否可访问，不可访问则询问用户。
+知识库根来源：读 `zhishiku-gengxin/xinxi.txt`（键 `gengxin_wei`）。该文件含两行路径 `gengxin_wei_win` / `gengxin_wei_linux`，**按当前运行环境选**：Windows 取 `_win`（`C:/...`），Linux/WSL 取 `_linux`（`/mnt/c/...` 或 `install --linux-prefix` 写出的前缀）；两行指向同一个文件夹。旧单行 `gengxin_wei: <路径>` 则按当前 OS 判断是否可访问，不可访问则询问用户。
 
 ## 领域
 
@@ -128,7 +128,7 @@ metadata:
 
 1. **立即调用 `zhishiku-caiji`**，为本任务新建一个案例（**同领域**）。把「从缺口那一步起」的步骤作为该案例的大步骤分化。
 2. **扫描所有可用 skill，找能辅助解决当前缺口的**：
-   - 扫描方式：读 skill 索引 `skills.jsonl`（含每个 skill 的 name / description / triggers；也可用 `skill-manager` 的查询脚本）。索引路径按当前 OS 选：Windows 为 `C:\Users\xi\.pi\agent\skill-index\skills.jsonl`，Linux/WSL 为 `/media/xi/系统/Users/xi/.pi/agent/skill-index/skills.jsonl`；索引不可用时，列出 skills 根目录（Windows `C:\Users\xi\.pi\agent\skills\`，Linux `/media/xi/系统/Users/xi/.pi/agent/skills/`）下每个 `SKILL.md` 的 frontmatter `description`。
+   - 扫描方式：读 skill 索引 `skills.jsonl`（含每个 skill 的 name / description / triggers；也可用 `skill-manager` 的查询脚本）。索引路径按当前 OS 选：Windows 为 `C:\Users\<用户>\.pi\agent\skill-index\skills.jsonl`，Linux/WSL 为 `/mnt/c/Users/<用户>/.pi/agent/skill-index/skills.jsonl`；索引不可用时，列出 skills 根目录（Windows `C:\Users\<用户>\.pi\agent\skills\`，Linux `/mnt/c/Users/<用户>/.pi/agent/skills/`）下每个 `SKILL.md` 的 frontmatter `description`。
    - 按当前问题的关键词匹配（如 pwn / 堆 / 格式化串 / IDA / 浏览器 / 固件 …），列出候选。
    - 选最匹配的一个（或几个）→ **读取并遵循它的流程**来解决缺口。
    - **没有匹配的 skill** → 才用通用能力处理，并在报告里注明「无 skill 可辅助」。
@@ -179,9 +179,9 @@ python3 <skill 目录>/zhishiku-gengxin/scripts/yongfa.py <数据根>/<领域> \
 4. **回填 metadata**：对应案例 `entries/CASE-XXXX/metadata.json` 的 `sample.path` / `lab.env_root` / `lab.rootfs` / `lab.binary` 写实际路径。
 
 固定路径（唯一权威）：
-- 知识库根 `ai_iot`：`/media/xi/软件/ai_iot`
-- 环境根：`/media/xi/软件/ai_iot_huanjing/cases/CASE-XXXX`
-- 样本区：`/media/xi/软件/ai_iot/samples`（`incoming` / `curated` / `registry.txt`）
+- 知识库根 `<ai_iot根>`：由该领域自行约定（作者的取值写在 `tools/yangben-jiaojie.txt` 里）
+- 环境根：`<环境根>/cases/CASE-XXXX`
+- 样本区：`<ai_iot根>/samples`（`incoming` / `curated` / `registry.txt`）
 
 边界：大文件只留环境根，知识库语义只存**路径引用**；ai_iot 不再承担方法论（已在 `gengxin_wei/ai_iot`）；幂等（同案例更新 registry 同行）。
 

@@ -2,7 +2,9 @@
 
 日期：2026-09-27
 状态：已实施
-关联任务：`planing-biao` / `C:/Users/xi/zhishiku` / pk-001（对应 G1）
+关联任务：planing-biao / pk-001（对应 G1）
+> 本文记录来自作者本机环境；文中的领域名、案例号、条目计数已做脱敏。
+
 
 ## 背景
 
@@ -38,8 +40,8 @@ append-only，末尾 `★` 哨兵（与既有 `suoyin.txt` / `rizhi.txt` 同机�
 ```text
 # 实战使用日志（append-only；★ 是写入位）
 # 日期 | 键 | 结果 | 案例id | 备注
-2026-09-27 | liucheng_biao/H.leak.3 | 成 | ctf-pwn/0013 | -
-2026-09-27 | tools/libcsearch | 败 | ctf-pwn/0013 | 多解未 add_condition
+2026-09-27 | liucheng_biao/<标号> | 成 | <领域>/<案例号> | -
+2026-09-27 | tools/<工具名> | 败 | <领域>/<案例号> | 多解未消歧
 ★
 ```
 
@@ -75,15 +77,15 @@ append-only，末尾 `★` 哨兵（与既有 `suoyin.txt` / `rizhi.txt` 同机�
 - `zhishiku-gengxin/scripts/yongfa.py`：新增（统计 + 校验）。
 - `examples/domain-skeleton/yongfa.txt`：新增。
 - `sync.sh`：同步 `scripts/**`。
-- 数据侧：三个领域各建 `yongfa.txt`；`ctf-pwn` / `ai_iot` 的 `validate.py` 增加 `yongfa.txt` 必备文件、哨兵唯一、行格式三项检查。
+- 数据侧：各领域建 `yongfa.txt`；两个领域的 `validate.py` 增加 `yongfa.txt` 必备文件、哨兵唯一、行格式三项检查。
 - `docs/architecture.md`：新增「实战使用日志」小节。
 
 ## 验证
 
 - `sync.sh --check` → 全绿。
-- `ctf-pwn` 56 卡、`ai_iot` 19 卡：`validate.py` 全通过（含新增的 `yongfa.txt` 检查）。
+- 作者两个领域的卡片：`validate.py` 全通过（含新增的 `yongfa.txt` 检查）。
 - `yongfa.py` 合成日志实测：正确算出「用N 成X 败Y」、正确报出「成0败>=2 候选过期」、正确抓出非法行（日期/结果/字段数）与悬空引用。
-- 空日志下 `ctf-pwn` 报「库内键 150 · 零使用 150」——符合预期（尚未有实战记录）。
+- 空日志下报「零使用 = 库内键数」——符合预期（尚未有实战记录）。
 
 ## 后续（G2 待定）
 
