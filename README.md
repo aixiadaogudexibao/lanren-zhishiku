@@ -180,29 +180,6 @@ cp -a examples/domain-skeleton <数据根>/gengxin_wei/your-domain
 
 Ollama 等本地小模型**不要**参与 caiji / tilian / gengxin 写库；只允许只读辅助 `zhishiku-chuli`（详见 chuli 的「本地模型边界」）。
 
-## 推到 GitHub（本地已整理好时）
-
-本机先有提交后：
-
-1. 在 GitHub 网页 New repository → 名 `lanren-zhishiku` → Public → **不要**勾选初始化 README  
-2. 本地：
-
-```bash
-cd /path/to/lanren-zhishiku
-git remote add origin https://github.com/aixiadaogudexibao/lanren-zhishiku.git
-git push -u origin main
-```
-
-## 打包发布
-
-```bash
-bash pack.sh                 # -> dist/lanren-zhishiku-<日期>.zip
-STAMP=v1 bash pack.sh        # -> dist/lanren-zhishiku-v1.zip
-```
-
-从 `git HEAD` 导出，所以**先 commit 再打包**（工作区脏时 `pack.sh` 会警告）。
-`pack.sh` 会自动校验：关键文件齐备、包内本机 `xinxi.txt` 未混入。
-
 ## License
 
 MIT — 见 [LICENSE](LICENSE)。
