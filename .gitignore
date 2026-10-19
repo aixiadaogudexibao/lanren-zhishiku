@@ -25,3 +25,10 @@ __pycache__/
 
 # 发布包
 /dist/
+
+# 扩展编译产物 / 本地调试
+extensions/*.js
+extensions/*.js.map
+
+# 提示词本地副本（含本机路径时不要提交）
+docs/prompts/*.local.md

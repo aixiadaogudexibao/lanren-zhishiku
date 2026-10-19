@@ -128,6 +128,23 @@ def lib_keys(d: Path):
         for f in sorted(lb.glob("*.txt")):
             if not f.name.startswith("00_"):
                 keys.add(f"liucheng_biao/{f.stem}")
+    # 目的框架：jishu/<ID> · silu/<ID>（接题现行）
+    jishu = d / "jishu"
+    if jishu.is_dir():
+        for f in sorted(jishu.rglob("*.md")):
+            if f.name.startswith("00_"):
+                continue
+            keys.add(f"jishu/{f.stem}")
+    silu = d / "silu"
+    if silu.is_dir():
+        for f in sorted(silu.glob("*.md")):
+            if f.name.startswith("00_"):
+                continue
+            keys.add(f"silu/{f.stem}")
+    # 路由索引本体也可 tick（可选）
+    for rel in ("liucheng/diaoyong_mudi.txt", "liucheng/jineng_mudi.txt"):
+        if (d / rel).is_file():
+            keys.add(rel.replace("\\", "/"))
     tb = d / "tools"
     if tb.is_dir():
         for f in sorted(tb.glob("*.txt")):
@@ -479,16 +496,25 @@ def do_normalize_report(d: Path, args):
 
 
 def read_hit(d: Path, key: str) -> int:
-    """条目里的「命中：N」= 来源支撑数；没有则 0。仅卡片/工具文件带此字段。"""
+    """条目里的「命中：N」= 来源支撑数；没有则 0。卡片/工具/jishu/silu 可带。"""
     if key.startswith("liucheng_biao/"):
         p = d / "liucheng_biao" / (key.split("/", 1)[1] + ".txt")
     elif key.startswith("tools/"):
         p = d / "tools" / (key.split("/", 1)[1] + ".txt")
+    elif key.startswith("jishu/"):
+        stem = key.split("/", 1)[1]
+        hits = list((d / "jishu").rglob(stem + ".md"))
+        p = hits[0] if hits else None
+        if p is None:
+            return 0
+    elif key.startswith("silu/"):
+        p = d / "silu" / (key.split("/", 1)[1] + ".md")
     else:
         return 0
-    m = re.search(r"命中\s*[:：]\s*(\d+)", txt(p))
+    if not p or not Path(p).is_file():
+        return 0
+    m = re.search(r"命中\s*[:：]\s*(\d+)", txt(Path(p)))
     return int(m.group(1)) if m else 0
-
 
 def do_pick(d: Path, args):
     """决策树「多个节点同时满足」时的确定性择一。

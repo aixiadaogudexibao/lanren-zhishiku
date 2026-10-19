@@ -2,7 +2,7 @@
 name: zhishiku-caiji
 description: Use when 要把一次复杂任务的解决过程逐条采集为案例轨迹，供后续提炼执行流模板、知识点、方案与常用指令表时；也在 zhishiku-chuli 任务完成后、本轮有未记录采集标记时，按已通思路复现再采集。
 metadata:
-  version: "5.4.1"
+  version: "6.0.0"
 ---
 
 # 知识库案例采集（zhishiku-caiji）
@@ -180,7 +180,7 @@ caiji_wei_linux: <Linux 数据根绝对路径>
 ```
 
 - 分隔符固定为 `|`，节标题固定为 `[dai]` / `[hui]`；分隔符不得出现在字段内。
-- `order`：采集顺序，可手工调整（把某案例提前就改成 `1`，其余顺延）。
+- `order`：采集顺序。**不手改**——用脚本（见下）。
 - `id`：4 位十进制、全局自增、永不复用；案例文件夹名 = `<id>`。
 - `flag`：
 
@@ -195,6 +195,30 @@ caiji_wei_linux: <Linux 数据根绝对路径>
 - 必要状态 ∈ {0, 1, 2, 4}，互斥且必选其一；`8` 是可选附加位：`flag = 必要状态 + 8`。
 - 合法取值只有 `0 1 2 4 8 9 10 12`。出现其它值 = 数据损坏，停下询问用户。
 - **`flag & 8` 时**，大步骤全部完成后可直接交付；否则必须等用户确认。
+
+### 操作 biao_xin：用脚本，不手改
+
+`order` 重排、`flag` 改值、`[dai]↔[hui]` 移动是三件最容易写错的手工活。用脚本：
+
+```bash
+B=<本 skill 目录>/scripts/biao.py
+R=<数据根>/<领域>          # 例：~/.zhishiku/caiji_wei/ctf-pwn
+
+python3 $B $R show                   # 看当前全部案例与 flag
+python3 $B $R add 0032               # 自动编号并加入 [dai]
+python3 $B $R set-flag 0032 1        # 改 flag，自动校验合法值
+python3 $B $R move 0032 --to hui     # 归档：flag→2 → 搬目录 → 进 [hui] flag=4
+python3 $B $R order 0032 1           # 调到第 1 位（其余自动顺延）
+python3 $B $R check                  # 表↔目录一致性校验
+```
+
+规则：
+
+1. **禁止手改 `order`**：加一条或移一条都会影响后面全部，手改必错。
+2. **归档用 `move`**：它按归档流程走三步（`flag=2` → 搬目录 → `flag=4` + 重排），与规范一致；手搬目录会表和盘不一致。
+3. **`move --no-dir`** 只改表不搬目录：仅在目录已手工搬好、只差改表时用。
+4. 改完跑一次 `check`：表里有目录无 / 目录有表里无 / 重复 id / 非法 flag 都会报。
+5. 脚本只改 `biao_xin.txt` 与搬目录，**不碰 `buzou/` 内容**。
 
 ### renwu.txt（案例信息）
 
