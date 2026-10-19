@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""校验五个 zhishiku-* skill 的版本号是否一致
+"""校验各 zhishiku-* skill 的版本号是否一致
 
-规则（见 ~/.zhishiku/总览.md「版本号规则」）：
-  五个 skill 共用套件版本号，不再各自独立演进。
+规则（见 <数据根>/总览.md「版本号规则」）：
+  所有 zhishiku-* skill 共用套件版本号，不再各自独立演进。
+  目录里不存在的 skill（例如本仓未收录的 zhishiku-github）自动跳过，不算不一致。
 
 用法：
   python3 check_versions.py              # 只检查，不一致返回非零
-  python3 check_versions.py --set 6.1.0  # 五个一起改成指定版本
+  python3 check_versions.py --set 6.1.0  # 全部存在的一起改成指定版本
 """
 from __future__ import annotations
 
@@ -39,7 +40,7 @@ def read_ver(p: Path) -> str | None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--set", dest="new_ver", help="把五个 skill 一起改成该版本")
+    ap.add_argument("--set", dest="new_ver", help="把所有已存在的 skill 一起改成该版本")
     args = ap.parse_args()
 
     paths = {n: SKILLS_DIR / n / "SKILL.md" for n in NAMES}
@@ -64,18 +65,20 @@ def main() -> int:
     for n, p in paths.items():
         if not p.exists():
             vers[n] = None
-            print(f"✗ {n:18} 文件不存在")
+            # 未安装是可选项，不是错误（本仓只收录四个 skill）
+            print(f"- {n:18} 未安装（跳过）")
             continue
         v = read_ver(p)
         vers[n] = v
         print(f"{'✓' if v else '✗'} {n:18} {v or '无 version'}")
 
-    got = {v for v in vers.values() if v}
-    if len(got) == 1 and all(vers.values()):
-        print(f"\n✓ 版本一致：{got.pop()}")
+    present = {n: v for n, v in vers.items() if vers[n] is not None or (SKILLS_DIR / n / "SKILL.md").exists()}
+    got = set(present.values())
+    if len(got) == 1 and all(present.values()):
+        print(f"\n✓ 版本一致：{got.pop()}（{len(present)} 个 skill）")
         return 0
-    print(f"\n✗ 版本不一致：{sorted(got)}", file=sys.stderr)
-    print("  规则见 ~/.zhishiku/总览.md「版本号规则」；用 --set X.Y.Z 五个一起改。", file=sys.stderr)
+    print(f"\n✗ 版本不一致：{sorted(v for v in got if v)}", file=sys.stderr)
+    print("  规则见 <数据根>/总览.md「版本号规则」；用 --set X.Y.Z 一起改。", file=sys.stderr)
     return 2
 
 
