@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  决策树门槛文件 · 案例模板（参考设计）
+  实际位置：<数据根>/<领域>/menkan/workflow.xml
+
+  门槛 = 「大概的同一流程」：阶段门控 + 判定点 + 检查清单。
+  **不写具体步骤 / 命令**（那属于 liucheng_biao 卡片）。门槛只回答：
+    - 现在处在哪个阶段？
+    - 进下一阶段前，信息齐了吗？（没齐不许往下深做）
+    - 遇到岔路，按什么判定点选哪条？
+
+  来源与生效（MUST）：
+    - 用户直接提供 → 确认后直接生效。
+    - AI 自主提取   → 只产出候选，**必须经用户确认交付**后才写入；
+                      未确认的候选不得落盘，只能在报告里列出。
+  每个 step / point 带 <source> 与 <confirm>（来源=用户 / AI提取 <案例id>；confirm=谁+日期）。
+
+  维护方：zhishiku-gengxin（回注时写）；zhishiku-chuli **只读**。
+-->
+<domain_workflow language="zh-CN" version="1.0" domain="<领域>">
+
+  <scope>
+    <context>适用环境与前提（如：仅 CTF / 靶机 / 授权环境）。</context>
+    <goal>一句话目标（走完流程要得到什么）。</goal>
+  </scope>
+
+  <!-- 阶段门控：粗粒度。check = 进下一阶段前必须已具备的信息。 -->
+  <pipeline>
+    <step id="1" name="<阶段名>">
+      <action>这一阶段大致做什么（粗，不下钻到命令）。</action>
+      <check>进入下一阶段前必须已有的信息；未齐则停在本阶段。</check>
+      <source>用户</source>
+      <confirm>用户 2026-10-10</confirm>
+    </step>
+    <step id="2" name="<阶段名>">
+      <action>…</action>
+      <check>…</check>
+      <source>AI提取 <领域>/<案例id></source>
+      <confirm>用户 2026-10-10</confirm>
+    </step>
+    <!-- 按需增删；阶段名用领域通用词，不绑定某一道题 -->
+  </pipeline>
+
+  <!-- 判定点：岔路怎么选。可判定、可复现，不写「看情况」。 -->
+  <decision_points>
+    <!-- 统一并列门槛：同一分叉多个节点条件同时满足时，按实战使用次数择一 -->
+    <point name="多节点同时满足">
+      条件同时命中多个候选 → 按 成次数 &gt; 用次数 &gt; 生命周期 &gt; 命中 &gt; 分诊顺序，
+      用 `yongfa.py &lt;领域&gt; --pick &lt;键,键,...&gt;` 裁决；胜出项「成」为 0 则回退分诊表顺序。
+    </point>
+    <point name="<岔路口名>">按什么可观察的量选哪一支。</point>
+  </decision_points>
+
+  <!-- 检查清单：每个阶段收尾时自查。 -->
+  <checklist>
+    <item>…</item>
+  </checklist>
+
+</domain_workflow>
