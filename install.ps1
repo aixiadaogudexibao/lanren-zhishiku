@@ -29,6 +29,15 @@
   Overwrite an existing xinxi.txt whose contents differ. Without this, install
   keeps the existing file and warns, so a rerun cannot silently repoint your
   knowledge base at an empty directory.
+
+.PARAMETER WithExtensions
+  Also copy extensions/*.ts into <agent>\extensions. Off by default:
+  dangerous-op-guard asks before rm -rf, which should not be forced on anyone.
+  Set ZHISHIKU_ROOT / PI_AGENT_DIR / PI_SKILLS_DIR if your paths differ.
+
+.PARAMETER WithPrompts
+  Also append docs/prompts/AGENTS.zhishiku.md to <agent>\AGENTS.md.
+  Append-only; the existing file is backed up first and never replaced.
 #>
 param(
   [ValidateSet('Link', 'Copy')]
@@ -39,7 +48,9 @@ param(
   [switch]$SkipLink,
   [string]$DataRoot = '',
   [string]$LinuxPrefix = '',
-  [switch]$ForceXinxi
+  [switch]$ForceXinxi,
+  [switch]$WithExtensions,
+  [switch]$WithPrompts
 )
 
 # Console may default to a legacy codepage; force UTF-8 so Chinese output is readable.
@@ -161,8 +172,59 @@ if ($SkipLink) {
 }
 
 Write-Host ""
+$AgentRoot = Split-Path -Parent $SkillsRoot
+
+# --- optional: extensions ---
+if ($WithExtensions) {
+  $ExtSrc = Join-Path $SrcRoot 'extensions'
+  $ExtDst = Join-Path $AgentRoot 'extensions'
+  if (-not (Test-Path -LiteralPath $ExtSrc)) {
+    Write-Warning 'no extensions/ in repo, skip'
+  } else {
+    if (-not (Test-Path -LiteralPath $ExtDst)) { New-Item -ItemType Directory -Path $ExtDst -Force | Out-Null }
+    foreach ($f in Get-ChildItem -LiteralPath $ExtSrc -Filter *.ts) {
+      $dst = Join-Path $ExtDst $f.Name
+      if ((Test-Path -LiteralPath $dst) -and (-not $Force)) {
+        Write-Warning "exists, skip (use -Force to replace): $dst"
+        continue
+      }
+      Copy-Item -LiteralPath $f.FullName -Destination $dst -Force
+      Write-Host "extension $dst"
+    }
+    Write-Host '  note: set ZHISHIKU_ROOT / PI_AGENT_DIR / PI_SKILLS_DIR if your paths differ.'
+  }
+}
+
+# --- optional: prompts (append only, backup first) ---
+if ($WithPrompts) {
+  $PSrc = Join-Path $SrcRoot 'docs\prompts\AGENTS.zhishiku.md'
+  $PDst = Join-Path $AgentRoot 'AGENTS.md'
+  if (-not (Test-Path -LiteralPath $PSrc)) {
+    Write-Warning 'no docs/prompts/AGENTS.zhishiku.md in repo, skip'
+  } else {
+    if (-not (Test-Path -LiteralPath $AgentRoot)) { New-Item -ItemType Directory -Path $AgentRoot -Force | Out-Null }
+    $mark = '<!-- lanren-zhishiku:auto-appended -->'
+    $existing = if (Test-Path -LiteralPath $PDst) { Get-Content -LiteralPath $PDst -Raw -Encoding UTF8 } else { '' }
+    if ($existing -and $existing.Contains($mark)) {
+      Write-Host "prompts: already present in $PDst, skip"
+    } else {
+      if (Test-Path -LiteralPath $PDst) {
+        $bak = "$PDst.bak-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        Copy-Item -LiteralPath $PDst -Destination $bak -Force
+        Write-Host "prompts: backed up existing -> $bak"
+      }
+      $body = "`r`n$mark`r`n" + (Get-Content -LiteralPath $PSrc -Raw -Encoding UTF8)
+      [System.IO.File]::AppendAllText($PDst, $body, (New-Object System.Text.UTF8Encoding($false)))
+      Write-Host "prompts: appended -> $PDst"
+    }
+    Write-Host '  note: SYSTEM.zhishiku.md holds optional routing/extension notes; merge by hand if wanted.'
+  }
+}
+
 Write-Host "done."
 Write-Host "  data roots : $(if ($DataRoot) { $DataRoot } else { $SrcRoot })"
 Write-Host "  skills root: $SkillsRoot"
+if ($WithExtensions) { Write-Host "  extensions : $(Join-Path $AgentRoot 'extensions')" }
+if ($WithPrompts)   { Write-Host "  prompts    : $(Join-Path $AgentRoot 'AGENTS.md') (appended)" }
 Write-Host "  triggers   : 「使用知识库系统」 / 「开启知识库系统模式」"
 Write-Host "reopen the pi session to load skills."

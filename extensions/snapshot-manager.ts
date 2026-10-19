@@ -81,7 +81,7 @@ const LIFECYCLE: Lifecycle[] = [
 	},
 	{
 		type: "migrate-bak",
-		scope: "<数据根>/_bak_<名> 、_migrate_bak<名>",
+		scope: "<数据根>/_bak_<名> 、_迁移备份前缀<名>",
 		keep: 10,
 		keepDays: 365,
 		why: "整库迁移前的备份。用户决定长期保留（含历史快照链），不按超期清；只在数量超限时提示",
@@ -187,9 +187,9 @@ function scanAll(): SnapItem[] {
 		items.push(evalItem(type, "全局", n, p));
 	}
 
-	// 3) 迁移备份（根目录 _bak_* / _migrate_bak*）
+	// 3) 迁移备份（根目录 _bak_* / _<任意词>bak*）
 	for (const n of safeLs(KM_ROOT)) {
-		if (!/^(_bak_|_migrate_bak)/.test(n)) continue;
+		if (!/^(_bak_|_\w*bak)/.test(n)) continue;
 		items.push(evalItem("migrate-bak", "全局", n, join(KM_ROOT, n)));
 	}
 

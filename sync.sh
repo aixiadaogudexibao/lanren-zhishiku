@@ -71,13 +71,22 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
 fi
 
 rc=0
+# 有些系统只有 python3，没有 python（Linux 发行版常见）；显式探测一次
+if command -v python >/dev/null 2>&1; then
+  PY=python
+elif command -v python3 >/dev/null 2>&1; then
+  PY=python3
+else
+  echo "sync.sh: 需要 python 或 python3" >&2
+  exit 1
+fi
 for target in "${TARGETS[@]}"; do
   case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*) target="$(to_win "$target")" ;;
   esac
   SRC_ROOT="$SRC_ROOT" SOURCE_SEGMENT="$SOURCE_SEGMENT" \
   TARGET="$target" CHECK="$CHECK" HOME="$HOME" \
-  python - <<'PY' || rc=1
+  "$PY" - <<'PY' || rc=1
 import os
 import pathlib
 import re

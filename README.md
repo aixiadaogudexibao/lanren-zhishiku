@@ -87,6 +87,52 @@ bash sync.sh --check   # 只看漂移，不写盘（有漂移退出码 1）
 
 `sync.sh` 会按目标 harness 替换示例路径里的 `.pi/agent` 段（`.codex` 装的那份读起来就是 `.codex`），其余逐字节一致；行尾保持不变。它**只写 SKILL.md**，绝不碰 `xinxi.txt` 和 `*_wei/` 数据。
 
+## 扩展与提示词（可选）
+
+`install.sh` / `install.ps1` 默认**只装四个 skill**——那已经够用了：agent 读 `SKILL.md` 按流程走。
+
+想让日常使用更省事，再加两个开关。两者都**默认关闭**。
+
+### `--with-extensions` / `-WithExtensions`
+
+把 `extensions/*.ts` 复制到 `<agent>/extensions/`（默认 `~/.pi/agent/extensions/`）。
+装上后每轮自动做这些事：
+
+| 文件 | 干什么 |
+|---|---|
+| `zhishiku-domain.ts` | 按题目关键字 / 续跑条自动判定领域，注入该领域铁律与流程表 |
+| `zhishiku-guard.ts` | 每轮重读续跑条与缺口板；无采集标记时拦空采 |
+| `snapshot-manager.ts` | 快照统一台账（`/snapshot`、`/snapcheck`） |
+| `dangerous-op-guard.ts` | `rm -rf`、`dd of=/dev/*` 等危险命令前确认 |
+| `temp-script-cleaner.ts` | 收尾时列出本会话写的 `probe*` / `tmp*` 临时脚本 |
+| `logic-checker.ts` | 规则自洽性抽查 |
+
+> `dangerous-op-guard` 会在 `rm -rf` 前弹窗，所以默认不装，避免悄悄改变别人的环境。
+
+扩展不硬编码用户名，路径按 `ZHISHIKU_ROOT` / `PI_AGENT_DIR` / `PI_SKILLS_DIR` 解析，没设就按 `~` 推导。详见 `extensions/README.md`。
+
+### `--with-prompts` / `-WithPrompts`
+
+把 `docs/prompts/AGENTS.zhishiku.md` **追加**到 `<agent>/AGENTS.md`。
+这里面是续跑条规则（C0–C5 阶段、磁盘真相、中断恢复），不追加的话 agent 不会主动维护续跑条。
+
+安全做法：
+
+- **只追加，不覆盖**；已有文件先备份成 `AGENTS.md.bak-<时间>`
+- 写入带 `<!-- lanren-zhishiku:auto-appended -->` 标记，重跑不会重复追加
+
+`docs/prompts/SYSTEM.zhishiku.md`（技能路由、扩展说明）需要**手动合并**，因为不同人的 `SYSTEM.md` 结构差别大。
+
+### 一条命令装全
+
+```bash
+bash install.sh --copy --data-root ~/.zhishiku --with-extensions --with-prompts
+```
+
+```powershell
+.\install.ps1 -Mode Copy -DataRoot $env:USERPROFILE\.zhishiku -WithExtensions -WithPrompts
+```
+
 ## 目录
 
 ```text
@@ -99,6 +145,8 @@ lanren-zhishiku/
 ├── .gitattributes                # .sh/.py 必须 LF；.ps1/.cmd 用 CRLF
 ├── tests/selftest.py             # 静态一致性 + 脚本行为 + 领域自检
 ├── docs/architecture.md
+├── docs/prompts/                 # 可选提示词（AGENTS / SYSTEM 的 zhishiku 段落）
+├── extensions/                   # 可选 pi 扩展（护栏 / 领域注入 / 快照台账）
 ├── examples/domain-skeleton/     # 空领域骨架（无真实知识）
 ├── zhishiku-caiji/               # 采集层
 ├── zhishiku-tilian/              # 提炼层

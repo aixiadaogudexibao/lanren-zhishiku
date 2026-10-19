@@ -108,6 +108,19 @@ metadata:
 - **多窗口共写**：禁止 write 整文件覆盖，一律走 `scripts/resume_lock.py`（commit / patch / note / takeover / beat）。
 - 完整字段、心跳规则、冲突处理 → 见 `~/.pi/agent/AGENTS.md` 的「续跑条」节。
 
+### 辅助脚本 `scripts/`
+
+本 skill 目录下的脚本，都是**只读或只改自身状态**，不代替采集/提炼/回注：
+
+| 脚本 | 干什么 | 何时用 |
+|---|---|---|
+| `scripts/doctor.py` | 全链体检 + 交叉检验：把缺口板 / biao_xin / tilian 索引 / gengxin 容器 / yongfa 的状态集中列出，标出互相矛盾处（标了没采、采了没清标、提炼了没回注…） | 开工前判断链断在哪；`--domain <领域>` 单领域、`--strict` 有 ✗ 就非零退出 |
+| `scripts/show_flow.py` | 打印本轮应展示的技术卡与 `->` 执行流 | 交付报告前取素材 |
+| `scripts/resume_lock.py` | 续跑条并发读写（commit / patch / note / takeover / beat） | 每阶段切换 |
+| `scripts/check_versions.py` | 校验各 zhishiku-* skill 的 `metadata.version` 是否一致；`--set <版本>` 批量改 | 改过 SKILL.md 后 |
+
+体检报「孤儿脚本」即某脚本未在本文件被引用，补上说明或删除。
+
 ## 领域
 
 - 从用户请求判断领域，并**匹配 `gengxin_wei/` 下已有领域文件夹**（列 `gengxin_wei/suoyin.txt`）。

@@ -9,7 +9,15 @@
 #   bash install.sh --data-root ~/.zhishiku       # one data root shared by all harnesses
 #   bash install.sh --linux-prefix /media/u/系统   # C: 在 Linux 侧的挂载前缀（默认 /mnt/c）
 #   bash install.sh --force-xinxi                  # overwrite an existing xinxi.txt
+#   bash install.sh --with-extensions              # also install extensions/*.ts into <agent>/extensions
+#   bash install.sh --with-prompts                 # also append docs/prompts/AGENTS.zhishiku.md to <agent>/AGENTS.md
+#   bash install.sh --with-extensions --with-prompts   # full hand-holding setup
 #   SKILLS_ROOT=/path bash install.sh
+#
+# Extensions and prompts are OPTIONAL and off by default:
+#   - extensions add guard / domain-routing / snapshot automation. dangerous-op-guard
+#     will ask before rm -rf and similar, so it is not forced on anyone.
+#   - prompts are appended (never replace) and the old file is backed up first.
 
 set -euo pipefail
 
@@ -24,6 +32,8 @@ FORCE=0
 SKIP_XINXI=0
 SKIP_LINK=0
 FORCE_XINXI=0
+WITH_EXT=0
+WITH_PROMPTS=0
 DATA_ROOT=""
 SKILLS_ROOT="${SKILLS_ROOT:-$HOME/.pi/agent/skills}"
 
@@ -38,8 +48,10 @@ while [[ $# -gt 0 ]]; do
     --data-root) DATA_ROOT="$2"; shift 2 ;;
     --linux-prefix) LINUX_C_PREFIX="$2"; shift 2 ;;
     --force-xinxi) FORCE_XINXI=1; shift ;;
+    --with-extensions) WITH_EXT=1; shift ;;
+    --with-prompts) WITH_PROMPTS=1; shift ;;
     -h|--help)
-      sed -n '2,16p' "$0"
+      sed -n '2,24p' "$0"
       exit 0
       ;;
     *) echo "unknown arg: $1" >&2; exit 1 ;;
@@ -209,8 +221,64 @@ else
 fi
 
 echo
+# --- optional: extensions ---
+# 默认不装：dangerous-op-guard 会在 rm -rf 前弹窗，不该悄悄改变别人的环境。
+AGENT_ROOT="$(dirname "$SKILLS_ROOT")"
+if [[ "$WITH_EXT" -eq 1 ]]; then
+  EXT_SRC="$SRC_ROOT/extensions"
+  EXT_DST="$AGENT_ROOT/extensions"
+  if [[ ! -d "$EXT_SRC" ]]; then
+    echo "warn: no extensions/ in repo, skip" >&2
+  else
+    mkdir -p "$EXT_DST"
+    for f in "$EXT_SRC"/*.ts; do
+      [[ -e "$f" ]] || continue
+      n="$(basename "$f")"
+      dst="$EXT_DST/$n"
+      if [[ -e "$dst" ]] && [[ "$FORCE" -eq 0 ]]; then
+        echo "warn: exists, skip (use --force to replace): $dst" >&2
+        continue
+      fi
+      cp "$f" "$dst"
+      echo "extension $dst"
+    done
+    echo "  note: set ZHISHIKU_ROOT / PI_AGENT_DIR / PI_SKILLS_DIR if your paths differ."
+  fi
+fi
+
+# --- optional: prompts ---
+# 只追加，不覆盖；写前先备份。
+if [[ "$WITH_PROMPTS" -eq 1 ]]; then
+  P_SRC="$SRC_ROOT/docs/prompts/AGENTS.zhishiku.md"
+  P_DST="$AGENT_ROOT/AGENTS.md"
+  if [[ ! -f "$P_SRC" ]]; then
+    echo "warn: no docs/prompts/AGENTS.zhishiku.md in repo, skip" >&2
+  else
+    mkdir -p "$AGENT_ROOT"
+    MARK="<!-- lanren-zhishiku:auto-appended -->"
+    if [[ -f "$P_DST" ]] && grep -qF "$MARK" "$P_DST"; then
+      echo "prompts: already present in $P_DST, skip"
+    else
+      if [[ -f "$P_DST" ]]; then
+        BAK="$P_DST.bak-$(date +%Y%m%d-%H%M%S)"
+        cp "$P_DST" "$BAK"
+        echo "prompts: backed up existing -> $BAK"
+      fi
+      {
+        echo ""
+        echo "$MARK"
+        cat "$P_SRC"
+      } >> "$P_DST"
+      echo "prompts: appended -> $P_DST"
+    fi
+    echo "  note: SYSTEM.zhishiku.md holds optional routing/extension notes; merge by hand if wanted."
+  fi
+fi
+
 echo "done."
 echo "  data roots : ${DATA_ROOT:-$SRC_ROOT}"
 echo "  skills root: $SKILLS_ROOT"
+[[ "$WITH_EXT" -eq 1 ]] && echo "  extensions : $AGENT_ROOT/extensions"
+[[ "$WITH_PROMPTS" -eq 1 ]] && echo "  prompts    : $AGENT_ROOT/AGENTS.md (appended)"
 echo "  triggers   : 「使用知识库系统」 / 「开启知识库系统模式」"
 echo "reopen the pi session to load skills."

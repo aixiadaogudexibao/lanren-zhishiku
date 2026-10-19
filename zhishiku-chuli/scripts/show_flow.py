@@ -2,7 +2,7 @@
 """执行流展示：把本轮用到的技术卡按「下一跳」串成 a -> b -> c
 
 用法：
-  python3 show_flow.py <领域根> --date 2026-10-18 [--case ctf-pwn/0031]
+  python3 show_flow.py <领域根> --date 2026-10-18 [--case <领域>/<编号>]
   python3 show_flow.py <领域根> --keys liucheng_biao/H.cat.1,liucheng_biao/H.cat.2
 
 说明：
